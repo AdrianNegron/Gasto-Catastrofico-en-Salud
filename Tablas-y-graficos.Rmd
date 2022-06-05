@@ -1,0 +1,544 @@
+---
+title: "Renderizado de tablas y gráficos"
+author: "Adrian Negron Bellido"
+date: "9/7/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+# Activando librerias y funciones para el tratamiento de datos
+options(tinytex.verbose = TRUE)
+#install.packages("xtable")
+# Modificar variables en especial de tipo categórica
+library(Hmisc)
+library(expss)
+library(pivottabler)
+# Realización de tablas
+library(xtable)
+# Reshape de tablas para adaptar a gráficos
+library(reshape2)
+# Tratamiento de data
+library(tidyverse)
+# Gragicos
+library(ggthemes)
+# Renderizado en general
+library(knitr)
+# Renderizado de tablas para word
+library(flextable)
+library(officer)
+library(officedown)
+# Renderizado de tablas y gráficos latex
+library(kableExtra)
+
+# Comvertir un string en un symbolo
+library(rlang)
+library(broom)
+
+#Creación de mapas
+library(sf)
+library(purrr)
+library(ggrepel)
+library(scatterpie)
+
+# Eliminar tildes
+library(stringi)
+
+# COnfigurando las opciones para:
+knitr::opts_chunk$set(
+  echo       = FALSE, # No mostrar el codigo que se ejecutado
+  message    = FALSE, # No mostrar los mensajes del código ejecutado
+  warning    = FALSE, # No mostrar las advertencias del código ejecutado
+  results    = "asis",# Asis permite renderizar dentro de word los titulos de las tablas, gráficos o insertar directamente algo en word 
+  fig.width  = 7,# Seteando el ancho de las figuras
+  fig.height = 4 # seteando el alto de las figuras
+)
+
+# Vinculando el archivos de funciones con el documento
+source("Funciones/Funciones.R",encoding = "utf-8") 
+# Encoding -> permite especificar el tipo de entrada de texto para que se lea, así mismo que aparezca caracteres raros o diferentes
+
+# # formatting properties for specific paragraphs
+# centeredP <- fp_par(text.align = "center")
+
+```
+
+# Análisis descriptivo de las variables
+
+## Gasto Catastrófico a nivel de Perú
+
+```{r}
+# Abriendo solo la base de datos consolidada
+load("Data/Final_Data/data.Rda")
+```
+
+### Ubicación de hogares
+
+```{r}
+create_table(df,"Area","GCS120","year","Area de residencia y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"Area","GCS120","year","Area de residenica y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Nivel de Educación Jefe de Hogar
+
+```{r}
+create_table(df,"educ","GCS120","year","Nivel de ecuación del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"educ","GCS120","year","Nivel de ecuación del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Quintil de Ingresos (Hogar)
+
+```{r}
+# COmposición dle quintil de ingresos
+load("Data/Ingresos_Quintil/quintil_peru_2019.Rda")
+load("Data/Ingresos_Quintil/quintil_peru_2020.Rda")
+
+quintiles <- quintiles_2019 %>%
+    left_join(quintiles_2020, by = "Quintiles_Ingresos")
+
+quintiles[,c(2,3)] = round(quintiles[,c(2,3)],2) 
+
+flextable(quintiles) %>%
+    set_header_labels(values = list(Quintiles_Ingresos = "Quintiles",
+                                    Ingresos_2019 = "Ingresos s/\n(2019)",
+                                    Ingresos_2020 = "Ingresos s/\n(2020)")) %>%
+    theme_vanilla()
+
+create_table(df,"Q_ing","GCS120","year","Quintil de Ingreso del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"Q_ing","GCS120","year","Quintil de Ingreso del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Limitación permanente (Hogar)
+
+```{r}
+create_table(df,"Discap_hog","GCS120","year","Limitación permanente y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"Discap_hog","GCS120","year","Limitación permanente y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Enfermedad o malestar crónico (Hogar)
+
+```{r}
+create_table(df,"m_cronichog","GCS120","year","Enfermedad o malestar crónico y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"m_cronichog","GCS120","year","Enfermedad o malestar crónico y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Ocupación del Jefe del Hogar
+
+```{r}
+create_table(df,"ocup","GCS120","year","Situación laboral del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"ocup","GCS120","year","Situación laboral del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Población vulnerable (Hogar)
+
+```{r}
+create_table(df,"p_vul","GCS120","year","Población vulnerable y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"p_vul","GCS120","year","Población vulnerable y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### COVID-19 (Hogar)
+
+```{r}
+create_table(df,"covid_hog","GCS120","year","COVID-19 y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"covid_hog","GCS120","year","COVID-19 y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Acceso a agua potable y saneamiento básico (Hogar)
+
+```{r}
+create_table(df,"Acceso_as","GCS120","year","Acceso a agua potable y Sanemaiento básico y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df,"Acceso_as","GCS120","year","Acceso a agua potable y Sanemaiento básico y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+## Comportamiento del gasto catastrófico en las regiones del perú (2020)
+
+```{r, fig.width=8, fig.height=12}
+mapa <- st_read("Mapas/DEPARTAMENTOS.shp")
+
+n_dep <- df %>%
+    filter(year == 2019) %>%
+    # Agrupando por dep
+    group_by(dep) %>%
+    # Contando las observaciones por departamento
+    count(dep,name = "n_dep")
+
+gcs_dep <- df %>%
+    # Filtrando solo los casos que hayan tenido GCS
+    filter(GCS120 == "Con GCS" & year == 2019) %>%
+    # Agrupando por dep
+    group_by(dep) %>%
+    # COntando los casos por departamento que tuvieron GCS
+    count(GCS120,name = "value") %>%
+    # Uniendo las bases de datos gcs_dep y n_dep
+    left_join(n_dep,by = "dep") %>%
+    # Opteniendo el pct por departamento con GCS
+    mutate(pct = round(value/n_dep,4)) %>%
+    mutate(c_pct = 1-pct) %>%
+    # Columna con mayuscula
+    mutate(DEPARTAMEN = toupper(dep)) %>%
+    # Guardando solo alguas variables
+    select(DEPARTAMEN,dep,pct,c_pct)
+
+
+# Eliminando las tildes de la columna DEPARTAMEN
+gcs_dep$DEPARTAMEN = stri_trans_general(gcs_dep$DEPARTAMEN, "Latin-ASCII")
+
+mapa <- mapa %>%
+    left_join(gcs_dep,by = "DEPARTAMEN")
+  
+remove(n_dep,gcs_dep)  
+
+# Creando el centroide del mapa
+mapa <- mapa %>% 
+    mutate(centroid = map(geometry, st_centroid), 
+         coords = map(centroid,st_coordinates), 
+         coords_x = map_dbl(coords,1),
+         coords_y = map_dbl(coords,2))
+
+
+# Graficando el mapa de calor
+ggplot(mapa) +
+    geom_sf(aes(fill = pct),color = "gray70") +
+    labs(title = "Porcentaje de población con GCS \npor departamento (2019)",
+       caption = "Fuente: ENAHO (2020).Elaboración propia",
+       x="Longitud",
+       y="Latitud") +
+    scale_fill_continuous(guide_legend(title = "Incidencia de GCS\n(U = 20%)"),high = "#132B43", low = "#56B1F7") +
+    geom_text_repel(mapping = aes(x = coords_x-0.13,y = coords_y,label = scales::percent(pct,accuracy = 0.1)),color = "white", 
+                    size = 3) +
+    theme(legend.position = "top")
+
+```
+
+```{r, fig.width=8, fig.height=12}
+
+# Graficando el mapa + pie charts
+    # Creando una nueva base de datos y luego convetierlo en data.frame
+data_map = mapa %>%
+  select(DEPARTAMEN,coords_x,coords_y,pct,c_pct)
+    # Eliminando "geometry" de data_map y de esta manero convertirlo de un archivo sp -> shpaefile a un dataframe
+data_map$geometry = NULL
+
+    # Graficando el mapa
+ggplot(mapa) +
+  geom_sf(color = "gray70") +
+  # geom_scatterpie  -> solo trabaja con data frame por ello se creo data_map
+  geom_scatterpie(data = data_map, aes(x=coords_x, y=coords_y, group=DEPARTAMEN, r = 0.5),cols = c("pct","c_pct")) +
+  labs(title = "Porcentaje de población con GCS \npor departamento (2020)",
+       caption = "Fuente: ENAHO (2020), GEOGPSPERU.\nElaboración propia",
+       x="Longitud",
+       y="Latitud") +
+  # COnfigurando el los labels en cada pie chart
+  geom_text(data = data_map,aes(y = coords_y, x = coords_x, 
+                label = scales::percent(pct,accuracy = 0.1)),
+                nudge_y = 0.4, nudge_x = 0.5, size = 3) +
+  geom_text(data = data_map,aes(y = coords_y, x = coords_x, 
+                label = scales::percent(c_pct,accuracy = 0.1)),
+            nudge_y = -0.4, nudge_x = -0.5, size = 3) +
+  # scale_fill_viridis_d(guide_legend(title = "Incidencia de GCS\n(U = 20%)"),
+  #                     labels = c("Con GCS","Sin GCS"))
+  scale_fill_brewer(palette = "Dark2",guide_legend(title = "Incidencia de GCS\n(U = 20%)"),
+                      labels = c("Con GCS","Sin GCS"),type = c(2,4)) +
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        # legend.text = element_text(colour = "white"),
+        plot.title = element_text(colour = "black"))
+
+```
+
+## Comportamiento del gasto catastrófico en las regiones del perú (2020)
+
+```{r, fig.width=8, fig.height=12}
+mapa <- st_read("Mapas/DEPARTAMENTOS.shp")
+
+n_dep <- df %>%
+    filter(year == 2020) %>%
+    # Agrupando por dep
+    group_by(dep) %>%
+    # Contando las observaciones por departamento
+    count(dep,name = "n_dep")
+
+gcs_dep <- df %>%
+    # Filtrando solo los casos que hayan tenido GCS
+    filter(GCS120 == "Con GCS" & year == 2020) %>%
+    # Agrupando por dep
+    group_by(dep) %>%
+    # COntando los casos por departamento que tuvieron GCS
+    count(GCS120,name = "value") %>%
+    # Uniendo las bases de datos gcs_dep y n_dep
+    left_join(n_dep,by = "dep") %>%
+    # Opteniendo el pct por departamento con GCS
+    mutate(pct = round(value/n_dep,4)) %>%
+    mutate(c_pct = 1-pct) %>%
+    # Columna con mayuscula
+    mutate(DEPARTAMEN = toupper(dep)) %>% 
+    # Guardando solo alguas variables
+    select(DEPARTAMEN,dep,pct,c_pct)
+
+# Eliminando las tildes de la columna DEPARTAMEN
+gcs_dep$DEPARTAMEN = stri_trans_general(gcs_dep$DEPARTAMEN, "Latin-ASCII")
+
+mapa <- mapa %>%
+    left_join(gcs_dep,by = "DEPARTAMEN")
+  
+remove(n_dep,gcs_dep)  
+
+# Creando el centroide del mapa
+mapa <- mapa %>% 
+    mutate(centroid = map(geometry, st_centroid), 
+         coords = map(centroid,st_coordinates), 
+         coords_x = map_dbl(coords,1),
+         coords_y = map_dbl(coords,2))
+
+
+# Graficando el mapa de calor
+ggplot(mapa) +
+    geom_sf(aes(fill = pct),color = "gray70") +
+    labs(title = "Porcentaje de población con GCS \npor departamento (2020)",
+       caption = "Fuente: ENAHO (2020).Elaboración propia",
+       x="Longitud",
+       y="Latitud") +
+    scale_fill_continuous(guide_legend(title = "Incidencia de GCS\n(U = 20%)"),high = "#132B43", low = "#56B1F7") +
+    geom_text_repel(mapping = aes(x = coords_x-0.13,y = coords_y,label = scales::percent(pct,accuracy = 0.1)),color = "white", 
+                    size = 3) +
+    theme(legend.position = "top")
+
+```
+
+```{r, fig.width=8, fig.height=12}
+
+# Graficando el mapa + pie charts
+    # Creando una nueva base de datos y luego convetierlo en data.frame
+data_map = mapa %>%
+  select(DEPARTAMEN,coords_x,coords_y,pct,c_pct)
+    # Eliminando "geometry" de data_map y de esta manero convertirlo de un archivo sp -> shpaefile a un dataframe
+data_map$geometry = NULL
+
+    # Graficando el mapa
+ggplot(mapa) +
+  geom_sf(color = "gray70") +
+  # geom_scatterpie  -> solo trabaja con data frame por ello se creo data_map
+  geom_scatterpie(data = data_map, aes(x=coords_x, y=coords_y, group=DEPARTAMEN, r = 0.5),cols = c("pct","c_pct")) +
+  labs(title = "Porcentaje de población con GCS \npor departamento (2020)",
+       caption = "Fuente: ENAHO (2020), GEOGPSPERU.\nElaboración propia",
+       x="Longitud",
+       y="Latitud") +
+  # COnfigurando el los labels en cada pie chart
+  geom_text(data = data_map,aes(y = coords_y, x = coords_x, 
+                label = scales::percent(pct,accuracy = 0.1)),
+                nudge_y = 0.4, nudge_x = 0.5, size = 3) +
+  geom_text(data = data_map,aes(y = coords_y, x = coords_x, 
+                label = scales::percent(c_pct,accuracy = 0.1)),
+            nudge_y = -0.4, nudge_x = -0.5, size = 3) +
+  # scale_fill_viridis_d(guide_legend(title = "Incidencia de GCS\n(U = 20%)"),
+  #                     labels = c("Con GCS","Sin GCS"))
+  scale_fill_brewer(palette = "Dark2",guide_legend(title = "Incidencia de GCS\n(U = 20%)"),
+                      labels = c("Con GCS","Sin GCS"),type = c(2,4)) +
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        # legend.text = element_text(colour = "white"),
+        plot.title = element_text(colour = "black"))
+
+```
+
+## Gasto Catastrófico en la Región cusco
+
+```{r}
+df_c <- df %>%
+  filter(dep == "Cusco")
+```
+
+### Ubicación de hogares
+
+```{r}
+create_table(df_c,"Area","GCS120","year","Area de residencia y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"Area","GCS120","year","Area de residenica y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Nivel de Educación Jefe de Hogar
+
+```{r}
+create_table(df_c,"educ","GCS120","year","Nivel de ecuación del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"educ","GCS120","year","Nivel de ecuación del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Quintil de Ingresos (Hogar)
+
+```{r}
+# COmposición dle quintil de ingresos
+load("Data/Ingresos_Quintil/quintil_cusco_2019.Rda")
+load("Data/Ingresos_Quintil/quintil_cusco_2020.Rda")
+
+quintiles <- quintiles_2019_c %>%
+    left_join(quintiles_2020_c, by = "Quintiles_Ingresos")
+
+quintiles[,c(2,3)] = round(quintiles[,c(2,3)],2) 
+
+flextable(quintiles) %>%
+    set_header_labels(values = list(Quintiles_Ingresos = "Quintiles",
+                                    Ingresos_2019 = "Ingresos s/\n(2019)",
+                                    Ingresos_2020 = "Ingresos s/\n(2020)")) %>%
+    theme_vanilla()
+
+create_table(df_c,"Q_ing","GCS120","year","Quintil de Ingreso del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"Q_ing","GCS120","year","Quintil de Ingreso del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Limitación permanente (Hogar)
+
+```{r}
+create_table(df_c,"Discap_hog","GCS120","year","Limitación permanente y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"Discap_hog","GCS120","year","Limitación permanente y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Enfermedad o malestar crónico (Hogar)
+
+```{r}
+create_table(df_c,"m_cronichog","GCS120","year","Enfermedad o malestar crónico y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"m_cronichog","GCS120","year","Enfermedad o malestar crónico y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Ocupación del Jefe del Hogar
+
+```{r}
+create_table(df_c,"ocup","GCS120","year","Situación laboral del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"ocup","GCS120","year","Situación laboral del Jefe del Hogar y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Población vulnerable (Hogar)
+
+```{r}
+create_table(df_c,"p_vul","GCS120","year","Población vulnerable y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"p_vul","GCS120","year","Población vulnerable y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### COVID-19 (Hogar)
+
+```{r}
+create_table(df_c,"covid_hog","GCS120","year","COVID-19 y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"covid_hog","GCS120","year","COVID-19 y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+### Acceso a agua potable y saneamiento básico (Hogar)
+
+```{r}
+create_table(df_c,"Acceso_as","GCS120","year","Acceso a agua potable y Sanemaiento básico y GCS (U > 20%)",r_markdown = TRUE)
+create_graph(df_c,"Acceso_as","GCS120","year","Acceso a agua potable y Sanemaiento básico y GCS (U > 20%)",r_markdown = TRUE)
+```
+
+
+# Análisis Panel data
+
+```{r eval=FALSE}
+####################################################################################
+# Cuarto poder programa de domingo 10 de octubre del 2021 porcentaje de bodegas
+# que cerró por covid tiempo 40 min (entrevista a Jaime Chiang)
+
+# Data Perú
+load("Data/Final_Data/data_panel.Rda")
+df_panel <- df_panel %>%
+  mutate(year = as.factor(year))
+
+# Data Cusco
+# load("Data/Final_Data/data_cusco.Rda")
+load("Data/Final_Data/data_cpanel.Rda")
+df_cpanel <- df_cpanel %>%
+  mutate(year = as.factor(year))
+
+# Efectos Aleatorios
+library(lme4) # modelo de efectos variables
+library(glmmML)
+library(sjPlot)
+
+# Peru
+re_peru <- glmer(GCS120 ~ Area + seg_hog + Q_ing + N_asalariado + a_educ + ocup + Acceso_as + m_cronichog + Discap_hog + N_pvul + covid_hog + (1|id_panel),family = binomial,data = df_panel, nAGQ = 12, start = 0, control = glmerControl(optimizer = "bobyqa"), verbose = 2)
+summary(re_peru)
+
+# Cusco
+re_cusco <- glmer(GCS120 ~ Area + seg_hog + Q_ing + N_asalariado + a_educ + ocup + Acceso_as + m_cronichog + Discap_hog + N_pvul + covid_hog + (1|id_panel),family = binomial,data = df_cpanel,nAGQ = 12,start = 0, control = glmerControl(optimizer = "bobyqa"), verbose = 2)
+summary(re_cusco)
+
+
+# Save the models
+save(re_peru,re_cusco,file = "Modelos/re_models.Rda")
+
+```
+
+## Modelo Panel Perú
+
+En esta secció pasaremos a analizar cual el es la relación existente entre la variable dependiente y la varibles independientes, es así que primero pasaremos a ver el comportamiento y la relacón entre las misma para el caso peruano, ello se reaizó por medio de la estiamción de un modelo de regresión logistico con efectos aleratorios, es así que se obtuvo los sigientes resultados.
+
+```{r}
+# Eliminando todas las variables antes creadas
+# rm(list = ls())
+
+# Vinculando el archivos de funciones con el documento
+source("Funciones/Funciones.R",encoding = "utf-8")
+
+
+# Vinculando el archivos de funciones para modelos random effect
+source("Funciones/funciones_re.R",encoding = "utf-8")
+
+library(lme4)
+# Cargando los modelos haste fiteados
+load("Modelos/re_models.Rda")
+
+summary_model_table("GCS model 1|Coeff" = re_peru, "GCS model 1|Exp" = re_peru)
+```
+
+Acorde a los resultados obtennidos por la estimación del modelo logistico con efectos aleatoreos es posible observar que casi todas la variables independientes consideradas para la estimación del mismo son significativas, dado que el p-valor es menor al 5%, sin embargo se observa que la variable Acceso a Agua y Saneamiento básico no es significativa dado que el p-valor de la misma es mayor al nivel de significancia. Corroborando que la mayoria de las vairable consideradas son explican el comportamiento de la variable dependiente pasaremos a interpretar los odd ratios.
+
+Si consideramos el lugar donde un vive un determinado hogar podemos decir que si el hogar residera en un area considerada como urbana tendrá ((1.263 - 1) \times 100) 26.3% más de probabilidad de incurrir en Gasto Catatrófico en Salud que uno que reside en un un area urbana, considerando las mismas caracteristicas observadas ocmo no observadas, ello implica también todas las variables consideradas dentro del modelo, así mismo podemos decir que la relación existente entre la variable area de residenicia del hogar y el Gasto Catatrófico en Salud es posiitiva.
+
+Por otra lado, si analizamos la variable seguro del hogar con respecto al Gasto Catarófico del hogar obervamos que la relación que se presenta es negativa dado que presenta un coefficiente igual a -0.247, sin embargo en terminos de probailidad el mismo implica que si en el hogar al menos uno de sus integrante presenta un seguro de salud este presnetará ((0.782-1) \times 100) 21.8% menos probailidad de incurrir en Gasto Catastrófico que un hogar en el cual ninguno de sus integrantes cuenta con un seguro de salud, teniendo en cuenta las mismas caracteriticas observadas como no observadas y las variables independientes dentro del modelo.
+
+Ahora pasaremos a observar el comportamiento del Gasto Catastrófico frente a el nivel de ingresos de los hogares, sin emabargo, para este análisis los hogares se han segmentado por quintiiles, obteniendose así 5 grupos, en el cual el primer quintil represnta a los hogares con menores ingresos, mientras quel el qinto quintil hace refencia a los hogares con mayor ingreso, dada dicha explicación comenzaremos realizando la intepretación, primegeniamente debe observarse que los coeficientes de lo difernetes niveles de ingresos son todos positivos por lo que implica que exite una realción positiva entre el Gasto Catatrófico en Salud y le nivel de ingresos de los hogares, por otra parte en terminos probabilisticos se puede entender de la siguiente manera, un hogar el cual se encuentre dentro del quinto quintil ingresos en comparación de un hogar que se encuentre en el primer quintil de ingresos, presentará ((2.319 - 1) \times 100) 1.319 veces de probabilidad de incurrir en gasto gastrófico, todo ello teniendose en cuenta las mismas caracteristiccas observadas, no observadddas y las variables consideradas dentro del modelo.
+
+Otra de las variables que explica la variable independiente es la referida por años de educación del jefe del hogar, el cual acorde al modelo estimado nos muestra que esta presenta una relación inversa co repsecto al Gasto catastrófica en salud, dado que el coeficiente estimado (-0.024) es negativo, así mismo se puede interpretar que un año adicional más en la edución del jefe del hogar generaría que disminuya la probailidad del hogar en incurrir en gasto catastrófico en ((0.976-1) \times 100) 2.4% con la mismas caracteristicas observadas, no obervadas y de als variabels consideras dentro del modelo.
+
+una variable que también se incorpora en el análsis es la situación laboral en la cual se encuentra el jefe del hogar, la cual comprende tres grupos que son:
+
+-   **No PEA:** la cual hace refencia al grupo de jefes de hogar que no se encuentrna en busqueda de trabajo o por motivos de edad se encuentran retirados.
+
+-   **PEA DESOCUPADA:** la cual es el grupo de jefes del hogar que se encuntran desempleados pero bsucan activamente un trabajo
+
+-   **PEA OCUPADA:** es el conjunto o grupo de jefes de hogar que cuentan un trabajo y por tanto reciben un salario
+
+Es así que de acuerdo a los parametros estimados podemos decir que que existe un relación inverva entre la variable dependiente y la sitaución laboral del jefe del hogar, para ser más extactos se puede decir que si el jefe del hogar se encunetra dentro de la PEA Ocupada o en terminos más sencillos tiene un trabajo frente a una hogar cuyo jefe de hogar se encuentra en el grupo de personas que se retiraron o no están buscando activamente trabajo, tendrán 30.3% menos de probabilidad de incurrir en gasto catastrófico considerando las mismas caracteristicas observadas, no observadas y las variables consideradas dentro del modelo.
+
+Otra de las variables que se incorporó dentro del modelo es si el hogar cuenta con acceso a agua y saneamiento básico. Si bien dicha variable no es sginificativa para el modelo el coeficiente estimado nos da una idea de su relación con la vairable dependiente, dado que este es igual a -0.026, se puede afirmar que existe una relación inversa entre el GCS y al acceso agua y saneamiento básico.
+
+Por otro lado, dentro del modelo que son significativas para el modelo como tambíen presentan una relación positiva con la variable independiente, dicha variables son m_cronichog, que representa la exitencia de al menos una persona dentro del hogar con un enfermedad crónica, Discap_Hog, la cual hace referencia si al menos una persona dentro del hogar existe una persona con discapacidad y N_pvul la cual hace refencia al numero depersonas vulnerables dentro del hogar, es así que se puede observar que en el caso de la variable m_cronichog, se puede decir que si al menos uno de los mimbros del hogar presentase un enfermedad crónica, dicho hogar presentará 1.849 veces la posibilidad de incurrir en GCS frente a uno que no cuanta con ningun miembro con una enfermedad crónica, teniendo en considerción de las mismas caracteristicas observadas, no observadas y de las variables conideradas en el modelo.
+
+En cuanto a la variable Discap_hog, puede afirmarse que si un hogar cuanta con al menos un miembro con discapaciadad, este hogar tendría ((1.421 - 1) \times 100) 42.1% más de probabilidad de incurrir en GCS frente a un hogar que nopresnta ningún miembro con discapacidad, tomando en cuenta las mismas caraceristicas observadas, no observadas y de las variables consideradas en el modelo.
+
+Así también, podemos decir que si un hogar presntase una persona más considerada como población vulnerable, dicho hogar presentaría ((1.119 - 1) \times 100) 11.9% de probabilidad de incurrir en GCS, tomando en cuenta las mismas caracteriticas observadas, no observadas y las mismas caracteristicas en cuanto a las variables consideradas en el modelo.
+
+Por ultimo, tenemos a la variable covid_hog, la cual nos indica que si al menos una de la personas perteneciente a un determinado hogar tuvo COVID-19, es así que podemos observar que a comparación del resto de variables esta variable es la que presneta un coeficiente muy alto y positivo lo que indica que existe una relación positiva con la variable dependiente, así mismo se puede interpretar que si en el hogar haya con COVID-19 o que vaya a tener COVID-19, dicho hogar tendrá 6.669 más posibilidades de incurrir en GCS que aquel hogar que no presente ningun miembro con COVID-19, teneindo en consideración que se tome en cuenta las mismas caracteristicas observables, no observables y de las variables cosnideradas en el modelo.
+
+``` {r}
+
+ic_peru <- re_intra_class_corr(re_peru)
+ic_peru[2] <- round(ic_peru[2],3)
+ic_peru <- rbind(c("Standard Deviation (RE):", round(exp(sqrt(unlist(VarCorr(re_peru)))),3)),ic_peru)
+
+flextable(ic_peru) %>%
+    set_caption(caption = "Medidas de análisis",
+                autonum = officer::run_autonum()) 
+```
+
+De acuerdo a la tabla anterior y como el modelo antes expuesto es posible calcualr otras medidas que nos permite interpretar de mejor manera el modelo antes descrito es así que se tiene la desvisión standar la  cual nos indica que la probabilidad de tener una GCS para un hogar, del cual no es posible se observar sus caracteristicas es una desviación estandar por encima de la media que es 2.958 veces el promedio de un hogar con las mismas caracteristicas observadas incluyendo, las variables consideradas para explicar la variable dependiente.
+
+Por otra parte, la correlación intra clase no s dice que al rededor de un cuarto de la propención de caer en GCS, más allá de las variables consideradas para explicar al misma, puede ser atribuido a otros caracteriticas propias de los hogares.
+
+En cuanto a la probailidad marginal, esta nos indica que la probailidad de que un hogar cualquiera caiga en GCS es de 88.9%, así mismo, la probailidad de que el mismo hogar caiga de nuevo en GCS es de 1.5%. Por otro lado, tambien se aprecia que un hogar caiga dos veces en GCS si este tiene caracteriticas medias equivalentes es equivalente a una R de Person de 0.003, una Q de Yule de 0.124, o en terminos probilisticos implica que la probailidad de que un hogar que cayó en GCS 1.283 veces mayor a la de un hogar que no cayó en GCS.
+
+## Modelo panel Cusco
+``` {r}
+summary_model_table("GCS model 1|Coeff" = re_cusco, "GCS model 1|Exp" = re_cusco,"GCS model 2|Coeff" = re_peru, "GCS model 2|Exp" = re_peru)
+```
+
+Con respecto al modelo estimado para la región Cusco, puede verse que gran parte de las variables independientes consideradas no son significativas y solo algunas variables como es el caso del quinto quintil de ingresos, m_cronichog (almenos un integrante del hogar presenta enfermedad crónica) y el número de población vulnerable (N_pvul) son significativas al 5%, dado que las vairables en su mayoria no son significativas, la interpretación de sus coefcicentes más precisamente los odd ratio sería ineficiente y no reflejaria la realidad, sin embargo algo que si nos dá cierta informaicón acerca de la relación de las variables indpendites con la variable dependiente, a pesar de no ser significativos, es el signo de los cefficientes estimados de las mismas variables.
+
+Es así que podemos decir que granparte de la relación que existe entre las variables independientes y la variable dependiente que se describió en modelo nacional se cumple para la región Cusco. Es así que de manera reusmida podemos decir, la relación que existe entre las variables Area de residenica del hogar (Area), Quintil de ingreso al cual perenece el hogar (Q_ing), que al menos un integrante del hogar presente una enfermedad crónica (m_cronichog) y el número de población vulnerable (N_pvul) son variable que presentan una relación positiva con el GCS, miesntras que las variables almenos uno de lso integrante del hogar cuanta con un seguro de salud (seg_hog), número de asalariados (N_asalariado) y años de educación del jefe del hogar (a_educ) presnetan al igual que el modelo nacional una relación negativa con la variable dependiente, sin embargo otras variables como es el caso de al ocupación del jefe del hogar (ocup), acceso de agua y saneamiento (Acceso_as), exitencia de al menos un miembro del hogar en con discapacidad (Discap_hog) y la existencia de que al menos uno de los integrantes del hogar tuvo COVID-19 (covid_hog) presenta un relación contraria a lo que se muestra en el modelo nacional, es te comportmaiento contrario al modelo naiconal puede explicarse principalmente por la exitenica de pocos datos en la categorias de dichas variables, ello se corrobora por medio de la sguiente tabla.
+
+
